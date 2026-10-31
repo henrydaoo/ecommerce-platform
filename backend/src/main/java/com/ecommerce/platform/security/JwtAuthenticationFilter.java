@@ -17,7 +17,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/** Verifies the access token signature on every request; no DB lookup on this hot path (ADR-004). */
+   
+                                                                             
+                      
+   
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -28,8 +31,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                     @NonNull HttpServletResponse response,
-                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
@@ -45,8 +48,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException | IllegalArgumentException ex) {
                 log.debug("Invalid or expired access token: {}", ex.getMessage());
-                // Leave the security context empty - request falls through as unauthenticated,
-                // GlobalExceptionHandler / Spring Security returns 401 as appropriate.
+                                                                                               
+                                                                                       
             }
         }
 

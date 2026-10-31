@@ -8,7 +8,7 @@ public interface CartService {
 
     CartResponse getCart(Long userId);
 
-    /** Rejects inactive/soft-deleted products (PRD.md). Merges quantity if the product is already in the cart. */
+                                                                                                                  
     CartResponse addItem(Long userId, AddCartItemRequest request);
 
     CartResponse updateItem(Long userId, Long itemId, UpdateCartItemRequest request);

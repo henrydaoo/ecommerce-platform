@@ -6,7 +6,7 @@ import lombok.Getter;
 
 import java.time.Instant;
 
-/** Matches the error shape documented in docs/API_SPEC.md. */
+                                                              
 @Getter
 @Builder
 public class ErrorResponse {

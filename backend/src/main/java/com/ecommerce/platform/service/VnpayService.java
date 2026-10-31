@@ -1,4 +1,4 @@
-package com.ecommerce.platform.payment;
+package com.ecommerce.platform.service;
 
 import com.ecommerce.platform.dto.response.VnpayIpnResponse;
 import com.ecommerce.platform.dto.response.VnpayReturnResponse;
@@ -9,7 +9,7 @@ import java.util.Map;
 public interface VnpayService {
     String createPaymentUrl(Order order, String clientIp);
 
-    VnpayReturnResponse verifyReturn(Map<String, String> parameters);
+    VnpayReturnResponse handleReturn(Map<String, String> parameters);
 
     VnpayIpnResponse handleIpn(Map<String, String> parameters);
 }

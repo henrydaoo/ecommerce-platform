@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,11 +17,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 
-/**
- * Refresh tokens are stored server-side, hashed, and rotated on every use
- * (ADR-004) - this is what makes real logout/revocation possible, unlike a
- * pure-stateless JWT design.
- */
+   
+                                                                          
+                                                                           
+                             
+   
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -31,7 +32,7 @@ public class RefreshTokenService {
     @Value("${app.jwt.refresh-expiration-ms}")
     private long refreshExpirationMs;
 
-    /** Issues a new refresh token for the given user and persists its hash. Returns the RAW token. */
+                                                                                                      
     @Transactional
     public String issue(User user) {
         String rawToken = generateRawToken();
@@ -44,14 +45,18 @@ public class RefreshTokenService {
         return rawToken;
     }
 
-    /**
-     * Validates the raw refresh token, revokes it, and issues a brand-new one
-     * (rotation) - limits the blast radius of a stolen token, since reuse of
-     * an already-rotated token is detectable (see ADR-004).
-     */
+       
+                                                                              
+                                                                             
+                                                            
+       
     @Transactional
     public RotationResult rotate(String rawToken) {
-        RefreshToken existing = refreshTokenRepository.findByTokenHash(hash(rawToken))
+        if (!StringUtils.hasText(rawToken)) {
+            throw new TokenExpiredOrRevokedException();
+        }
+
+        RefreshToken existing = refreshTokenRepository.findByTokenHashForUpdate(hash(rawToken))
                 .orElseThrow(TokenExpiredOrRevokedException::new);
 
         if (existing.isRevoked() || existing.getExpiresAt().isBefore(Instant.now())) {

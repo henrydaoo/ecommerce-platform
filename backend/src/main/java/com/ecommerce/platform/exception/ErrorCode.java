@@ -2,10 +2,10 @@ package com.ecommerce.platform.exception;
 
 import org.springframework.http.HttpStatus;
 
-/**
- * Every business error has a named code + HTTP status here - no ad-hoc
- * "400 with a string improvised at throw-time" (see docs/CODE_STANDARDS.md).
- */
+   
+                                                                       
+                                                                             
+   
 public enum ErrorCode {
 
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND),

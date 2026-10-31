@@ -10,22 +10,32 @@ public interface ProductService {
 
     PageResponse<ProductResponse> list(Long categoryId, String search, int page, int size);
 
+    PageResponse<ProductResponse> listAllForAdmin(int page, int size);
+
     ProductResponse getById(Long id);
 
     ProductResponse create(CreateProductRequest request);
 
     ProductResponse update(Long id, UpdateProductRequest request);
 
-    /** Soft delete - sets is_active = false, never removes the row (ADR-003). */
+                                                                                 
     void delete(Long id);
 
-    /**
-     * Decrements stock for a checkout under a pessimistic row lock (ADR-002).
-     * Must be called from within the checkout's own transaction so the lock
-     * is held for the duration of the whole checkout, not just this call.
-     * Returns the locked, post-decrement {@link Product} so the caller (order
-     * checkout) can read its price/name for the order-item snapshot without
-     * an extra query outside the lock.
-     */
+    void activate(Long id);
+
+       
+                                                                              
+                                                                            
+                                                                          
+                                                                              
+                                                                            
+                                       
+       
     Product decrementStockForCheckout(Long productId, int quantity);
+
+       
+                                                                                 
+            
+       
+    void restoreStockForCancelledOrder(Long productId, int quantity);
 }

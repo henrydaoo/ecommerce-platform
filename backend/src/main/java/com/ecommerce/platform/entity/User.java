@@ -8,8 +8,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-// Note: @Getter/@Setter only, never @Data on entities - see docs/CODE_STANDARDS.md
-// (Lombok's generated equals/hashCode/toString misbehave with lazy JPA associations).
+                                                                                   
+                                                                                      
 @Entity
 @Table(name = "users")
 @Getter

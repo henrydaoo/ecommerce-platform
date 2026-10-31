@@ -7,11 +7,11 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * unitPrice is a snapshot taken at purchase time, never joined live from
- * Product - so historical orders stay accurate if the product price changes
- * later (see docs/DATABASE.md).
- */
+   
+                                                                         
+                                                                            
+                                
+   
 @Entity
 @Table(name = "order_items")
 @Getter

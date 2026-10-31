@@ -13,12 +13,12 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    /**
-     * Pessimistic write lock for checkout stock deduction (ADR-002). Callers
-     * must acquire locks in a consistent order (sorted by product id) across
-     * a single checkout transaction to avoid deadlocks between two carts
-     * touching the same products in opposite order.
-     */
+       
+                                                                             
+                                                                             
+                                                                         
+                                                    
+       
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Product p where p.id = :id")
     Optional<Product> findByIdForUpdate(@Param("id") Long id);
@@ -32,5 +32,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Page<Product> findByActiveTrueAndCategoryIdAndNameContainingIgnoreCase(
             Long categoryId, String search, Pageable pageable);
 
-    boolean existsByCategoryIdAndActiveTrue(Long categoryId);
+    boolean existsByCategoryId(Long categoryId);
 }

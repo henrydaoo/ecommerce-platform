@@ -1,26 +1,55 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { api } from "../../../lib/api";
 export default function VnpayReturn() {
-  const q = useSearchParams(),
-    [text, setText] = useState("Verifying payment…");
+  return (
+    <Suspense fallback={<main className="panel">Checking payment result...</main>}>
+      <VnpayReturnResult />
+    </Suspense>
+  );
+}
+
+function VnpayReturnResult() {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const [result, setResult] = useState<{
+    message: string;
+    paymentCancelled: boolean;
+  }>();
+  const [error, setError] = useState("");
   useEffect(() => {
+    let active = true;
     api
-      .request<any>(`/payment/vnpay/return?${q.toString()}`)
-      .then((r) =>
-        setText(
-          r.paymentSuccessful
-            ? "Payment received; confirmation is pending."
-            : "Payment was not verified.",
-        ),
+      .request<{ message: string; paymentCancelled: boolean }>(
+        `/payment/vnpay/return?${query}`,
       )
-      .catch((e) => setText(e.message));
-  }, [q]);
+      .then((response) => active && setResult(response))
+      .catch((cause: unknown) => {
+        if (active) {
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to verify the payment result.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [query]);
   return (
     <main className="panel">
       <h1>VNPay result</h1>
-      <p>{text}</p>
+      <p role={error ? "alert" : "status"}>
+        {error || result?.message || "Verifying payment..."}
+      </p>
+      {result?.paymentCancelled && (
+        <Link className="button button-primary" href="/orders">
+          View cancelled order
+        </Link>
+      )}
     </main>
   );
 }

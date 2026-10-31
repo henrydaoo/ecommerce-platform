@@ -12,11 +12,11 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * One row per payment attempt. {@link #rawCallbackPayload} stores the full
- * IPN body so an incident can be replayed offline against the verification
- * code (see docs/OPERATIONS.md, docs/POSTMORTEM-payment-reconciliation.md).
- */
+   
+                                                                           
+                                                                           
+                                                                            
+   
 @Entity
 @Table(name = "payment_transactions")
 @Getter

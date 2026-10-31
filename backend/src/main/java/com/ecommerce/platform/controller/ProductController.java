@@ -27,6 +27,13 @@ public class ProductController {
         return ResponseEntity.ok(productService.list(category, search, page, size));
     }
 
+    @GetMapping("/admin")
+    public ResponseEntity<PageResponse<ProductResponse>> listAllForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(productService.listAllForAdmin(page, size));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getById(id));
@@ -37,17 +44,26 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
-    /** version in the body is checked against the stored row - 409 on optimistic-lock conflict (ADR-002). */
+       
+                                                                     
+                                          
+       
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> update(@PathVariable Long id,
-                                                   @Valid @RequestBody UpdateProductRequest request) {
+            @Valid @RequestBody UpdateProductRequest request) {
         return ResponseEntity.ok(productService.update(id, request));
     }
 
-    /** Soft delete only - see ADR-003. */
+                                          
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         productService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        productService.activate(id);
         return ResponseEntity.noContent().build();
     }
 }

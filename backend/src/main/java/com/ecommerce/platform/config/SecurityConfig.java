@@ -47,13 +47,26 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login",
+                                "/api/v1/auth/refresh", "/api/v1/auth/logout",
+                                "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers("/api/v1/auth/me").authenticated()
                         .requestMatchers("/api/v1/payment/vnpay/**").permitAll()
+                        .requestMatchers("/api/v1/cart/**").hasRole("CUSTOMER")
+                        .requestMatchers("POST", "/api/v1/orders").hasRole("CUSTOMER")
+                        .requestMatchers("GET", "/api/v1/orders").hasRole("CUSTOMER")
+                        .requestMatchers("GET", "/api/v1/orders/*")
+                                .hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers("GET", "/api/v1/products/admin").hasRole("ADMIN")
                         .requestMatchers("GET", "/api/v1/products/**", "/api/v1/categories/**").permitAll()
-                        .requestMatchers("/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // PathPattern does not permit ** in the middle of a path.
-                        // The only nested admin route is GET /orders/admin/all.
+                        .requestMatchers("/actuator/health", "/actuator/health/**",
+                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/metrics", "/actuator/metrics/**",
+                                "/actuator/prometheus").hasRole("ADMIN")
+                                                                                  
+                                                                                
                         .requestMatchers("/api/v1/orders/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("PUT", "/api/v1/orders/*/status").hasRole("ADMIN")
                         .requestMatchers("POST", "/api/v1/products/**", "/api/v1/categories/**").hasRole("ADMIN")
                         .requestMatchers("PUT", "/api/v1/products/**", "/api/v1/categories/**").hasRole("ADMIN")

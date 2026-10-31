@@ -9,10 +9,10 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * version must be sent by the client and matched against the stored row for
- * optimistic-lock conflict detection - a 409 is returned on mismatch (ADR-002).
- */
+   
+                                                                            
+                                                                                
+   
 @Getter
 @Setter
 public class UpdateProductRequest {

@@ -14,7 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-// Thin controller: request/response mapping only, no business logic (docs/ARCHITECTURE.md).
+                                                                                            
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
@@ -24,35 +24,38 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<OrderResponse> checkout(@AuthenticationPrincipal UserPrincipal principal,
-                                                   @RequestHeader("Idempotency-Key") String idempotencyKey,
-                                                   @Valid @RequestBody CheckoutRequest request) {
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody CheckoutRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(orderService.checkout(principal.getId(), idempotencyKey, request));
     }
 
     @GetMapping
     public ResponseEntity<PageResponse<OrderResponse>> myOrders(@AuthenticationPrincipal UserPrincipal principal,
-                                                                  @RequestParam(defaultValue = "0") int page,
-                                                                  @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(orderService.listForUser(principal.getId(), page, size));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<OrderResponse> getById(@AuthenticationPrincipal UserPrincipal principal,
-                                                  @PathVariable Long id) {
+            @PathVariable Long id) {
         return ResponseEntity.ok(orderService.getById(principal.getId(), isAdmin(principal), id));
     }
 
     @GetMapping("/admin/all")
     public ResponseEntity<PageResponse<OrderResponse>> allOrders(@RequestParam(defaultValue = "0") int page,
-                                                                   @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(orderService.listAllForAdmin(page, size));
     }
 
-    /** Rejects invalid state transitions with 400 (see OrderStatusTransitionValidator / API_SPEC.md). */
+       
+                                                                              
+                    
+       
     @PutMapping("/{id}/status")
     public ResponseEntity<OrderResponse> updateStatus(@PathVariable Long id,
-                                                       @Valid @RequestBody UpdateOrderStatusRequest request) {
+            @Valid @RequestBody UpdateOrderStatusRequest request) {
         return ResponseEntity.ok(orderService.updateStatus(id, request));
     }
 

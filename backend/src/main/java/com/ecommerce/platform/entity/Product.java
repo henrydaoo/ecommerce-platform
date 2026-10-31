@@ -8,12 +8,12 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Soft-deleted via {@link #isActive}, never hard-deleted once ordered (ADR-003).
- * {@link #version} is the optimistic lock used for admin edits only - checkout
- * stock deduction uses a separate pessimistic-lock mechanism (ADR-002), see
- * ProductRepository#findByIdForUpdate.
- */
+   
+                                                                                 
+                                                                               
+                                                                            
+                                       
+   
 @Entity
 @Table(name = "products")
 @Getter

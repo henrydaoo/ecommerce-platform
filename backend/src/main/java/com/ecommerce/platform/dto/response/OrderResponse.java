@@ -19,9 +19,9 @@ public class OrderResponse {
     private List<OrderItemResponse> items;
     private Instant createdAt;
 
-    /**
-     * Redirect URL for VNPay payment, set only when paymentMethod = VNPAY.
-     * Populated by checkout for VNPAY orders; null for COD and order-history reads.
-     */
+       
+                                                                           
+                                                                                    
+       
     private String paymentUrl;
 }

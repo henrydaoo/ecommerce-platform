@@ -1,5 +1,6 @@
 # ── Planning docs — kept local, not pushed to the repo ──
 docs/
+newdocs/
 
 # ── OS ──
 .DS_Store
@@ -23,6 +24,11 @@ backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.log
 backend/HELP.md
+backend/src/main/resources/application-local.yml
+backend/benchmark/checkout-*-raw.json
+backend/benchmark/checkout-*-summary.json
+/checkout-*-raw.json
+/checkout-*-summary.json
 
 # ── Frontend (Next.js / Node) ──
 frontend/node_modules/

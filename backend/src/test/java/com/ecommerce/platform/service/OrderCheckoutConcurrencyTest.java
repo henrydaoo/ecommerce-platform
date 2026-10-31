@@ -2,6 +2,7 @@ package com.ecommerce.platform.service;
 
 import com.ecommerce.platform.common.PaymentMethod;
 import com.ecommerce.platform.common.Role;
+import com.ecommerce.platform.config.TestMailConfiguration;
 import com.ecommerce.platform.dto.request.CheckoutRequest;
 import com.ecommerce.platform.entity.Cart;
 import com.ecommerce.platform.entity.CartItem;
@@ -14,12 +15,16 @@ import com.ecommerce.platform.repository.CartRepository;
 import com.ecommerce.platform.repository.CategoryRepository;
 import com.ecommerce.platform.repository.ProductRepository;
 import com.ecommerce.platform.repository.UserRepository;
+import com.ecommerce.platform.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -34,17 +39,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * The scenario ADR-002 actually exists for, exercised end-to-end through
- * {@link OrderService#checkout}: two different customers, each with their
- * own cart and their own Idempotency-Key, both check out the last unit of
- * the same product at the same instant. TASKS.md's definition of done for
- * feat/order-checkout-concurrency requires this specific test to be green.
- * Real Postgres (Testcontainers), not H2 - see ProductServiceConcurrencyTest
- * for why H2's FOR UPDATE emulation isn't trustworthy here.
- */
+   
+                                                                         
+                                                                          
+                                                                          
+                                                                          
+                                                                           
+                                                                             
+                                                            
+   
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
+@ActiveProfiles("test")
+@Import(TestMailConfiguration.class)
 class OrderCheckoutConcurrencyTest {
 
     @Container
@@ -72,6 +79,8 @@ class OrderCheckoutConcurrencyTest {
     private CategoryRepository categoryRepository;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private Long buyerAId;
     private Long buyerBId;
@@ -88,7 +97,7 @@ class OrderCheckoutConcurrencyTest {
         product.setName("Last Unit Product");
         product.setDescription("Used to test the checkout stock race condition");
         product.setPrice(new BigDecimal("19.99"));
-        product.setStockQuantity(1); // exactly one unit left - the scenario ADR-002 exists for
+        product.setStockQuantity(1);                                                           
         product.setCategory(category);
         product.setActive(true);
         productRepository.save(product);
@@ -143,7 +152,7 @@ class OrderCheckoutConcurrencyTest {
                 readyLatch, startLatch, doneLatch, successCount, insufficientStockCount));
 
         readyLatch.await(5, TimeUnit.SECONDS);
-        startLatch.countDown(); // fire both checkouts as close to simultaneously as possible
+        startLatch.countDown();                                                              
         boolean finished = doneLatch.await(15, TimeUnit.SECONDS);
         executor.shutdown();
 
@@ -153,6 +162,10 @@ class OrderCheckoutConcurrencyTest {
 
         Product finalState = productRepository.findById(raceProductId).orElseThrow();
         assertEquals(0, finalState.getStockQuantity(), "Stock must never go negative and must land at exactly 0");
+        Integer orderEmails = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM outbox_events WHERE event_type = 'ORDER_CREATED'",
+                Integer.class);
+        assertEquals(1, orderEmails, "Only the committed checkout should create an order email intent");
     }
 
     private void runCheckout(Long buyerId, String idempotencyKey, CheckoutRequest request,
