@@ -34,7 +34,7 @@ public class CartServiceImpl implements CartService {
         return toResponse(getCartEntity(userId));
     }
 
-    /** Rejects inactive/soft-deleted products (PRD.md, ADR-003). */
+                                                                    
     @Override
     @Transactional
     public CartResponse addItem(Long userId, AddCartItemRequest request) {
@@ -79,17 +79,20 @@ public class CartServiceImpl implements CartService {
         return toResponse(cart);
     }
 
-    /**
-     * Every customer gets a cart at registration (see AuthServiceImpl), so a
-     * missing cart here indicates a data-integrity problem rather than a
-     * normal "not yet created" case.
-     */
+       
+                                                                             
+                                                                         
+                                     
+       
     private Cart getCartEntity(Long userId) {
         return cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cart", userId));
     }
 
-    /** Looks up a cart item and verifies it belongs to this user's cart, without leaking other users' item IDs. */
+       
+                                                                                
+                                     
+       
     private CartItem findOwnedItem(Long userId, Long itemId) {
         CartItem item = cartItemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("CartItem", itemId));

@@ -10,12 +10,12 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-/**
- * Access tokens are short-lived and verified purely by signature - no DB
- * lookup on every request, keeping the hot path fast (ADR-004).
- * Refresh token *validity* (revocation, rotation) is handled separately by
- * RefreshTokenService against the refresh_tokens table, not here.
- */
+   
+                                                                         
+                                                                
+                                                                           
+                                                                  
+   
 @Component
 public class JwtUtil {
 

@@ -11,20 +11,19 @@ import com.ecommerce.platform.entity.CartItem;
 import com.ecommerce.platform.entity.Order;
 import com.ecommerce.platform.entity.OrderItem;
 import com.ecommerce.platform.entity.Product;
-import com.ecommerce.platform.event.OrderCreatedEvent;
-import com.ecommerce.platform.event.OrderStatusChangedEvent;
 import com.ecommerce.platform.common.PaymentMethod;
 import com.ecommerce.platform.exception.ApiException;
 import com.ecommerce.platform.exception.EmptyCartException;
 import com.ecommerce.platform.exception.ErrorCode;
+import com.ecommerce.platform.exception.InvalidStateTransitionException;
 import com.ecommerce.platform.exception.ResourceNotFoundException;
 import com.ecommerce.platform.repository.CartRepository;
 import com.ecommerce.platform.repository.OrderRepository;
 import com.ecommerce.platform.service.OrderService;
+import com.ecommerce.platform.service.OutboxNotificationService;
 import com.ecommerce.platform.service.ProductService;
-import com.ecommerce.platform.payment.VnpayService;
+import com.ecommerce.platform.service.VnpayService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,7 +45,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
     private final ProductService productService;
     private final VnpayService vnpayService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxNotificationService outboxNotificationService;
 
     @Override
     @Transactional
@@ -55,8 +54,8 @@ public class OrderServiceImpl implements OrderService {
             throw new ApiException(ErrorCode.VALIDATION_ERROR, "Idempotency-Key header is required");
         }
 
-        // Idempotent order creation (API_SPEC.md): a retried request with the
-        // same key returns the original order instead of creating a duplicate.
+                                                                              
+                                                                               
         var existing = orderRepository.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
         if (existing.isPresent()) {
             return toResponse(existing.get(), paymentUrlFor(existing.get()));
@@ -69,9 +68,9 @@ public class OrderServiceImpl implements OrderService {
             throw new EmptyCartException();
         }
 
-        // Lock ordering (ADR-002): acquire pessimistic locks sorted by product
-        // id so two checkouts touching the same products in opposite order
-        // can't deadlock each other.
+                                                                               
+                                                                           
+                                     
         List<CartItem> sortedItems = cart.getItems().stream()
                 .sorted(Comparator.comparing(ci -> ci.getProduct().getId()))
                 .toList();
@@ -86,11 +85,12 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal total = BigDecimal.ZERO;
 
         for (CartItem cartItem : sortedItems) {
-            // Locked, decremented inside this same @Transactional method, so
-            // the lock is held for the whole checkout, not just this call
-            // (ADR-002). Also gives us the authoritative price for the
-            // order-item snapshot (DATABASE.md).
-            Product locked = productService.decrementStockForCheckout(cartItem.getProduct().getId(), cartItem.getQuantity());
+                                                                             
+                                                                          
+                                                                       
+                                                 
+            Product locked = productService.decrementStockForCheckout(cartItem.getProduct().getId(),
+                    cartItem.getQuantity());
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
@@ -108,14 +108,11 @@ public class OrderServiceImpl implements OrderService {
 
         String paymentUrl = paymentUrlFor(order);
 
-        // Cart is cleared on successful checkout; orphanRemoval on Cart.items
-        // deletes the rows on flush.
+                                                                              
+                                     
         cart.getItems().clear();
 
-        // AFTER_COMMIT listener (added with feat/email-async) sends the
-        // order-confirmation email - never call mail directly here (see
-        // docs/ARCHITECTURE.md "Email Implementation Pattern").
-        eventPublisher.publishEvent(new OrderCreatedEvent(order.getId()));
+        outboxNotificationService.orderCreated(order.getId());
 
         return toResponse(order, paymentUrl);
     }
@@ -128,7 +125,10 @@ public class OrderServiceImpl implements OrderService {
         return PageResponse.from(result.map(this::toResponse));
     }
 
-    /** A non-owner, non-admin request gets a 404, not a 403 - avoids confirming the order exists (see ARCHITECTURE.md). */
+       
+                                                                                   
+                                          
+       
     @Override
     @Transactional(readOnly = true)
     public OrderResponse getById(Long userId, boolean isAdmin, Long orderId) {
@@ -153,12 +153,31 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderResponse updateStatus(Long orderId, UpdateOrderStatusRequest request) {
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
 
-        OrderStatusTransitionValidator.assertValid(order.getStatus(), request.getStatus());
+        if (!order.getStatus().canTransitionTo(request.getStatus())) {
+            throw new InvalidStateTransitionException(order.getStatus().name(), request.getStatus().name());
+        }
+        if (order.getPaymentMethod() == PaymentMethod.VNPAY
+                && (request.getStatus() == OrderStatus.PAID || request.getStatus() == OrderStatus.CANCELLED)) {
+            throw new ApiException(
+                    ErrorCode.INVALID_STATE_TRANSITION,
+                    "VNPay payment and cancellation status must be confirmed by a verified payment flow");
+        }
+        if (order.getStatus() == OrderStatus.PAID && request.getStatus() == OrderStatus.CANCELLED) {
+            throw new ApiException(
+                    ErrorCode.INVALID_STATE_TRANSITION,
+                    "Paid orders cannot be cancelled until refunds are supported");
+        }
+        if (order.getStatus() == OrderStatus.PENDING && request.getStatus() == OrderStatus.CANCELLED) {
+            order.getItems().stream()
+                    .sorted(Comparator.comparing(item -> item.getProduct().getId()))
+                    .forEach(item -> productService.restoreStockForCancelledOrder(
+                            item.getProduct().getId(), item.getQuantity()));
+        }
         order.setStatus(request.getStatus());
-        eventPublisher.publishEvent(new OrderStatusChangedEvent(order.getId(), order.getStatus()));
+        outboxNotificationService.orderStatusChanged(order.getId(), order.getStatus());
 
         return toResponse(order);
     }
@@ -184,12 +203,11 @@ public class OrderServiceImpl implements OrderService {
                 order.getTotalAmount(),
                 itemResponses,
                 order.getCreatedAt(),
-                paymentUrl
-        );
+                paymentUrl);
     }
 
     private String paymentUrlFor(Order order) {
-        return order.getPaymentMethod() == PaymentMethod.VNPAY
+        return order.getPaymentMethod() == PaymentMethod.VNPAY && order.getStatus() == OrderStatus.PENDING
                 ? vnpayService.createPaymentUrl(order, null)
                 : null;
     }

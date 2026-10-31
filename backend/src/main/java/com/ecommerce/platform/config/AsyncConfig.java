@@ -6,11 +6,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
-/**
- * Dedicated executor for email sending - never the default executor, so mail
- * never competes with other async work (see docs/ARCHITECTURE.md "Email
- * Implementation Pattern").
- */
+   
+                                                                             
+                                                                        
+                            
+   
 @Configuration
 public class AsyncConfig {
 

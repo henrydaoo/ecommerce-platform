@@ -6,10 +6,10 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
-/**
- * Standard pagination envelope, matching docs/API_SPEC.md "Pagination response shape".
- * Controllers never leak Spring Data's {@link Page} type directly to the client.
- */
+   
+                                                                                       
+                                                                                 
+   
 @Getter
 @AllArgsConstructor
 public class PageResponse<T> {

@@ -15,10 +15,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
-/**
- * Single place all exceptions are mapped to the standard error response shape
- * (docs/API_SPEC.md) - no scattered try/catch across controllers.
- */
+   
+                                                                              
+                                                                  
+   
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {

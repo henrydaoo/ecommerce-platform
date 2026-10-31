@@ -10,7 +10,6 @@ import com.ecommerce.platform.dto.response.UserResponse;
 import com.ecommerce.platform.entity.Cart;
 import com.ecommerce.platform.entity.User;
 import com.ecommerce.platform.entity.PasswordResetToken;
-import com.ecommerce.platform.event.UserRegisteredEvent;
 import com.ecommerce.platform.event.PasswordResetRequestedEvent;
 import com.ecommerce.platform.exception.DuplicateResourceException;
 import com.ecommerce.platform.exception.InvalidCredentialsException;
@@ -22,6 +21,7 @@ import com.ecommerce.platform.repository.PasswordResetTokenRepository;
 import com.ecommerce.platform.security.JwtUtil;
 import com.ecommerce.platform.security.RefreshTokenService;
 import com.ecommerce.platform.service.AuthService;
+import com.ecommerce.platform.service.OutboxNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,9 +43,11 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final ApplicationEventPublisher eventPublisher;
+    private final OutboxNotificationService outboxNotificationService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
-    @Value("${app.frontend-url}") private String frontendUrl;
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -61,12 +63,13 @@ public class AuthServiceImpl implements AuthService {
         user.setRole(Role.CUSTOMER);
         userRepository.save(user);
 
-        // Every new customer gets an empty cart up front (see DATABASE.md: users 1-1 carts).
+                                                                                     
+                  
         Cart cart = new Cart();
         cart.setUser(user);
         cartRepository.save(cart);
 
-        eventPublisher.publishEvent(new UserRegisteredEvent(user.getId()));
+        outboxNotificationService.userRegistered(user.getId());
 
         return buildAuthResponse(user);
     }
@@ -84,6 +87,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public AuthResponse refresh(String rawRefreshToken) {
         RefreshTokenService.RotationResult result = refreshTokenService.rotate(rawRefreshToken);
         User user = result.user();
@@ -103,23 +107,33 @@ public class AuthServiceImpl implements AuthService {
         return toUserResponse(user);
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void requestPasswordReset(ForgotPasswordRequest request) {
         userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
             passwordResetTokenRepository.invalidateUnusedByUserId(user.getId());
-            byte[] bytes = new byte[48]; secureRandom.nextBytes(bytes);
+            byte[] bytes = new byte[48];
+            secureRandom.nextBytes(bytes);
             String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-            PasswordResetToken token = new PasswordResetToken(); token.setUser(user); token.setTokenHash(hash(raw));
-            token.setExpiresAt(Instant.now().plus(Duration.ofMinutes(30))); passwordResetTokenRepository.save(token);
-            eventPublisher.publishEvent(new PasswordResetRequestedEvent(user.getEmail(), frontendUrl + "/reset-password?token=" + raw));
+            PasswordResetToken token = new PasswordResetToken();
+            token.setUser(user);
+            token.setTokenHash(hash(raw));
+            token.setExpiresAt(Instant.now().plus(Duration.ofMinutes(30)));
+            passwordResetTokenRepository.save(token);
+            eventPublisher.publishEvent(
+                    new PasswordResetRequestedEvent(user.getEmail(), frontendUrl + "/reset-password?token=" + raw));
         });
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        PasswordResetToken token = passwordResetTokenRepository.findByTokenHash(hash(request.getToken())).orElseThrow(TokenExpiredOrRevokedException::new);
-        if (token.getUsedAt()!=null || token.getExpiresAt().isBefore(Instant.now())) throw new TokenExpiredOrRevokedException();
-        token.setUsedAt(Instant.now()); token.getUser().setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        PasswordResetToken token = passwordResetTokenRepository.findByTokenHash(hash(request.getToken()))
+                .orElseThrow(TokenExpiredOrRevokedException::new);
+        if (token.getUsedAt() != null || token.getExpiresAt().isBefore(Instant.now()))
+            throw new TokenExpiredOrRevokedException();
+        token.setUsedAt(Instant.now());
+        token.getUser().setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         refreshTokenService.revokeAllForUser(token.getUser().getId());
     }
 
@@ -132,5 +146,13 @@ public class AuthServiceImpl implements AuthService {
     private UserResponse toUserResponse(User user) {
         return new UserResponse(user.getId(), user.getEmail(), user.getFullName(), user.getRole().name());
     }
-    private String hash(String raw) { try { return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(raw.getBytes(StandardCharsets.UTF_8))); } catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); } }
+
+    private String hash(String raw) {
+        try {
+            return Base64.getEncoder()
+                    .encodeToString(MessageDigest.getInstance("SHA-256").digest(raw.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }

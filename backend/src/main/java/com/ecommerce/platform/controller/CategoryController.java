@@ -30,11 +30,14 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponse> update(@PathVariable Long id,
-                                                    @Valid @RequestBody CreateCategoryRequest request) {
+            @Valid @RequestBody CreateCategoryRequest request) {
         return ResponseEntity.ok(categoryService.update(id, request));
     }
 
-    /** Rejected with 409 if any active product still references this category (ADR-003). */
+       
+                                                                             
+                 
+       
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);

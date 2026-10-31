@@ -2,11 +2,11 @@ package com.ecommerce.platform.exception;
 
 import lombok.Getter;
 
-/**
- * Root of the single exception hierarchy (see docs/CODE_STANDARDS.md).
- * Never throw a bare RuntimeException from service code - subclass this
- * with a specific, named exception instead.
- */
+   
+                                                                       
+                                                                        
+                                            
+   
 @Getter
 public class ApiException extends RuntimeException {
 

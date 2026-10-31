@@ -17,7 +17,10 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.util.Map;
 
-/** Separate bean so Spring's retry proxy is used rather than bypassed by self-invocation. */
+   
+                                                                        
+                   
+   
 @Component
 @Slf4j
 class RetryingMailSender {
@@ -26,21 +29,21 @@ class RetryingMailSender {
     private final String fromAddress;
 
     RetryingMailSender(JavaMailSender mailSender, SpringTemplateEngine templateEngine,
-                       @Value("${spring.mail.username:}") String fromAddress) {
+            @Value("${spring.mail.username:}") String fromAddress) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.fromAddress = fromAddress;
     }
 
-    @Retryable(retryFor = MailException.class, maxAttempts = 3,
-            backoff = @Backoff(delay = 2000, multiplier = 2))
+    @Retryable(retryFor = MailException.class, maxAttempts = 3, backoff = @Backoff(delay = 2000, multiplier = 2))
     public void send(String recipient, String subject, String template, Map<String, Object> variables) {
         try {
             Context context = new Context();
             context.setVariables(variables);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            if (fromAddress != null && !fromAddress.isBlank()) helper.setFrom(fromAddress);
+            if (fromAddress != null && !fromAddress.isBlank())
+                helper.setFrom(fromAddress);
             helper.setTo(recipient);
             helper.setSubject(subject);
             helper.setText(templateEngine.process(template, context), true);
@@ -51,7 +54,9 @@ class RetryingMailSender {
     }
 
     @Recover
-    public void recover(MailException exception, String recipient, String subject, String template, Map<String, Object> variables) {
+    public void recover(MailException exception, String recipient, String subject, String template,
+            Map<String, Object> variables) {
         log.error("Email permanently failed after retries: recipient={}, subject={}", recipient, subject, exception);
+        throw exception;
     }
 }

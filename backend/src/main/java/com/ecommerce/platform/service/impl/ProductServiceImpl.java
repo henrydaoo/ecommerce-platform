@@ -32,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
 
-    /** Public catalog: only is_active = true products, per ADR-003 / PRD.md. */
+                                                                                
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> list(Long categoryId, String search, int page, int size) {
@@ -57,9 +57,19 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> listAllForAdmin(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return PageResponse.from(productRepository.findAll(pageable).map(productMapper::toResponse));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ProductResponse getById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        if (!product.isActive()) {
+            throw new ResourceNotFoundException("Product", id);
+        }
         return productMapper.toResponse(product);
     }
 
@@ -82,11 +92,11 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(product);
     }
 
-    /**
-     * Admin edit path - uses optimistic locking (@Version), distinct from the
-     * pessimistic lock used at checkout (ADR-002). A version mismatch is a
-     * genuine 409, not an unexpected error.
-     */
+       
+                                                                              
+                                                                           
+                                            
+       
     @Override
     @Transactional
     public ProductResponse update(Long id, UpdateProductRequest request) {
@@ -116,13 +126,24 @@ public class ProductServiceImpl implements ProductService {
         return productMapper.toResponse(product);
     }
 
-    /** Soft delete only - sets is_active = false, row and every referencing order stay intact (ADR-003). */
+       
+                                                                                 
+                             
+       
     @Override
     @Transactional
     public void delete(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", id));
         product.setActive(false);
+    }
+
+    @Override
+    @Transactional
+    public void activate(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", id));
+        product.setActive(true);
     }
 
     @Override
@@ -137,5 +158,13 @@ public class ProductServiceImpl implements ProductService {
 
         product.setStockQuantity(product.getStockQuantity() - quantity);
         return product;
+    }
+
+    @Override
+    @Transactional
+    public void restoreStockForCancelledOrder(Long productId, int quantity) {
+        Product product = productRepository.findByIdForUpdate(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", productId));
+        product.setStockQuantity(Math.addExact(product.getStockQuantity(), quantity));
     }
 }

@@ -7,10 +7,10 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-/**
- * Server-side refresh token record (ADR-004). Stores a hash of the token,
- * never the raw token value, so a DB leak alone doesn't grant valid sessions.
- */
+   
+                                                                          
+                                                                              
+   
 @Entity
 @Table(name = "refresh_tokens")
 @Getter

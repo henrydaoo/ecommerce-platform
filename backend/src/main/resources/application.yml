@@ -1,10 +1,12 @@
 spring:
+  profiles:
+    default: local
   application:
     name: ecommerce-platform
 
   datasource:
-    # Use the Supabase POOLER connection string here (PgBouncer), not the direct
-    # connection - see ARCHITECTURE.md "Connection pooling vs Supabase free tier limits".
+                                                                                
+                                                                                         
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
@@ -12,15 +14,15 @@ spring:
       maximum-pool-size: ${DB_MAX_POOL_SIZE:8}
       minimum-idle: 2
       connection-timeout: 20000
-      # Supabase transaction pooler (PgBouncer) can route consecutive requests
-      # to different server sessions. Disable PostgreSQL server-side prepared
-      # statements to avoid "prepared statement already exists" errors.
+                                                                              
+                                                                             
+                                                                       
       data-source-properties:
         prepareThreshold: 0
 
   jpa:
     hibernate:
-      ddl-auto: validate # schema is owned by Flyway, never by Hibernate auto-DDL
+      ddl-auto: validate                                                         
     open-in-view: false
     properties:
       hibernate:
@@ -31,8 +33,8 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    # If the pooler causes issues running DDL, point this at the direct connection
-    # instead (see DATABASE.md).
+                                                                                  
+                                
     url: ${FLYWAY_DATABASE_URL:${DATABASE_URL}}
     user: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
@@ -45,25 +47,56 @@ spring:
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${SMTP_STARTTLS_ENABLE:true}
+            required: ${SMTP_STARTTLS_REQUIRED:false}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:ecommerce}
+    password: ${RABBITMQ_PASSWORD:local-dev-only}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   jwt:
     access-secret: ${JWT_ACCESS_SECRET}
     refresh-secret: ${JWT_REFRESH_SECRET}
-    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}   # 15 min
-    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:1209600000} # 14 days
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}           
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:1209600000}          
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+    refresh-cookie-same-site: ${REFRESH_COOKIE_SAME_SITE:Lax}
   cors:
-    allowed-origins: ${FRONTEND_URL:http://localhost:3000}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
   vnpay:
     tmn-code: ${VNPAY_TMN_CODE:}
     hash-secret: ${VNPAY_HASH_SECRET:}
     pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
     return-url: ${VNPAY_RETURN_URL:}
     query-url: ${VNPAY_QUERY_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  messaging:
+    email-exchange: ${EMAIL_EXCHANGE:ecommerce.email.events}
+    email-queue: ${EMAIL_QUEUE:ecommerce.email.notifications}
+    email-routing-key: ${EMAIL_ROUTING_KEY:email.notification}
+    email-dead-letter-exchange: ${EMAIL_DLX:ecommerce.email.dlx}
+    email-dead-letter-queue: ${EMAIL_DLQ:ecommerce.email.dead}
+    email-consumer-concurrency: ${EMAIL_CONSUMER_CONCURRENCY:1}
+    outbox-poll-interval-ms: ${OUTBOX_POLL_INTERVAL_MS:1000}
+    outbox-batch-size: ${OUTBOX_BATCH_SIZE:25}
+    outbox-lease-seconds: ${OUTBOX_LEASE_SECONDS:300}
+    outbox-max-attempts: ${OUTBOX_MAX_ATTEMPTS:10}
+    email-consumer-attempts: ${EMAIL_CONSUMER_ATTEMPTS:3}
+  rate-limit:
+    auth-capacity: ${AUTH_RATE_LIMIT_CAPACITY:10}
+    auth-refill-minutes: ${AUTH_RATE_LIMIT_REFILL_MINUTES:1}
 
 server:
   port: ${PORT:8080}
@@ -72,10 +105,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
+  health:
+    mail:
+      enabled: false
+    rabbit:
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 springdoc:
   swagger-ui:

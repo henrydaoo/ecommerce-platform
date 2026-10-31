@@ -2,6 +2,7 @@ package com.ecommerce.platform.service;
 
 import com.ecommerce.platform.entity.Category;
 import com.ecommerce.platform.entity.Product;
+import com.ecommerce.platform.config.TestMailConfiguration;
 import com.ecommerce.platform.exception.InsufficientStockException;
 import com.ecommerce.platform.repository.CategoryRepository;
 import com.ecommerce.platform.repository.ProductRepository;
@@ -11,12 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,15 +27,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Proves ADR-002's claim in practice: two customers can't both buy the last
- * unit of a product. Runs against a real Postgres (Testcontainers) rather
- * than H2, because H2's FOR UPDATE emulation doesn't reliably block a
- * concurrent transaction the way Postgres does - this test would otherwise
- * pass for the wrong reason.
- */
+   
+                                                                            
+                                                                          
+                                                                      
+                                                                           
+                             
+   
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
+@ActiveProfiles("test")
+@Import(TestMailConfiguration.class)
 class ProductServiceConcurrencyTest {
 
     @Container
@@ -71,7 +75,7 @@ class ProductServiceConcurrencyTest {
         product.setName("Last Unit Product");
         product.setDescription("Used to test the stock race condition");
         product.setPrice(new BigDecimal("9.99"));
-        product.setStockQuantity(1); // exactly one unit left - the scenario ADR-002 exists for
+        product.setStockQuantity(1);                                                           
         product.setCategory(category);
         product.setActive(true);
         productRepository.save(product);
@@ -94,7 +98,7 @@ class ProductServiceConcurrencyTest {
             executor.submit(() -> {
                 try {
                     readyLatch.countDown();
-                    startLatch.await(); // release both threads at the same instant
+                    startLatch.await();                                            
                     productService.decrementStockForCheckout(raceProductId, 1);
                     successCount.incrementAndGet();
                 } catch (InsufficientStockException ex) {
@@ -108,7 +112,7 @@ class ProductServiceConcurrencyTest {
         }
 
         readyLatch.await(5, TimeUnit.SECONDS);
-        startLatch.countDown(); // fire both checkouts as close to simultaneously as possible
+        startLatch.countDown();                                                              
         boolean finished = doneLatch.await(15, TimeUnit.SECONDS);
         executor.shutdown();
 

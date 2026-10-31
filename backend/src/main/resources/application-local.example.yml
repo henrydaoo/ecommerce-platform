@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ecommerce
+    username: ecommerce
+    password: local-db-only
+
+  flyway:
+    url: jdbc:postgresql://localhost:5432/ecommerce
+    user: ecommerce
+    password: local-db-only
+
+  mail:
+    host: localhost
+    port: 1025
+    username: local
+    password: local
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ecommerce
+    password: local-dev-only
+
+app:
+  frontend-url: http://localhost:3000
+  cors:
+    allowed-origins: http://localhost:3000
+  jwt:
+    access-secret: local-access-key-at-least-32-characters
+    refresh-secret: local-refresh-key-at-least-32-characters
+    refresh-cookie-secure: false
+    refresh-cookie-same-site: Lax
+  vnpay:
+    tmn-code: ""
+    hash-secret: ""
+    pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+    return-url: http://localhost:3000/checkout/vnpay-return
+    query-url: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction

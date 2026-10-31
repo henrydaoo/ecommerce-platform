@@ -60,14 +60,17 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryMapper.toResponse(category);
     }
 
-    /** Rejected with 409 if any active product still references this category (ADR-003). */
+       
+                                                                             
+                 
+       
     @Override
     @Transactional
     public void delete(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));
 
-        if (productRepository.existsByCategoryIdAndActiveTrue(id)) {
+        if (productRepository.existsByCategoryId(id)) {
             throw new CategoryInUseException(id);
         }
 

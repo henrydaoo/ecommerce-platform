@@ -1,0 +1,14 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: test
+    password: test
+    listener:
+      simple:
+        auto-startup: false
+
+app:
+  jwt:
+    access-secret: test-access-secret-that-is-at-least-32-bytes
+    refresh-secret: test-refresh-secret-that-is-at-least-32-bytes
